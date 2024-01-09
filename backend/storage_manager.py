@@ -1,6 +1,15 @@
 from backend.models.user import User
 from backend.models.state import State
 from backend.database import Session
+from backend.models.respond_state import *
+from config import *
+
+def get_all_women():
+    session = Session()
+    try:
+        return session.query(User).where(not User.gender).all()
+    finally:
+        session.close()
 
 
 def get_user_by_nick(user_nickname):
@@ -28,12 +37,12 @@ def get_user_state(user_nickname):
         session.close()
 
 
-def set_user_state(user_nickname, state, last_seen=None):
+def set_user_state(user_nickname, state, chat_id, last_seen=None):
     session = Session()
     try:
         user_state = session.query(State).filter(State.nickname == user_nickname).first()
         if not user_state:
-            session.add(State(nickname=user_nickname, state=state, last_seen=last_seen))
+            session.add(State(nickname=user_nickname, state=state, chat_id=chat_id, last_seen=last_seen))
             session.commit()
             return
         user_state.state = state
@@ -69,6 +78,14 @@ def get_active_user(gender, last_seen):
         session.close()
 
 
+def get_profiles():
+    session = Session()
+    try:
+        return session.query(State).where(State.state == RespondState.WAIT_FOR_ALLOW).all()
+    finally:
+        session.close()
+
+
 def set_user_name(nickname, name):
     user = User(nickname=nickname, name=name[1], surname=name[0])
     add_user(user)
@@ -90,5 +107,16 @@ def set_user_faculty(nickname, faculty):
 
 
 def set_user_image_path(nickname, image_path):
-    user = User(nickname=nickname, image_path=image_path, is_active=True)
+    user = User(nickname=nickname, image_path=image_path, is_active=False)
     add_user(user)
+
+
+def get_admin_chat_id():
+    session = Session()
+    try:
+        user_state = session.query(State).filter(State.nickname == ADMIN_NICKNAME).first()
+        if user_state is None:
+            return None
+        return user_state.chat_id
+    finally:
+        session.close()

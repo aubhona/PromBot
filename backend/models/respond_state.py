@@ -11,3 +11,7 @@ class RespondState(Enum):
     WAIT_FOR_FIND = 6
     WAIT_MENU = 7
     DEACTIVATE = 8
+    WAIT_PASSWORD = 9
+    ADMIN = 10
+    WAIT_FOR_ALLOW = 11
+    WAIT_CHANGE = 12
