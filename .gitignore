@@ -1,3 +1,4 @@
 prom.db
 config.py
 static
+__pycache__
