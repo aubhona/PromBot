@@ -108,16 +108,15 @@ async def decline(message: types.Message):
         methods.send_message.SendMessage(chat_id=message.chat.id, text=f"Анкета @{username} успешно отклонена!"))
     user_state = storage_manager.get_user_state(username)
     task2 = bot(methods.send_message.SendMessage(chat_id=user_state.chat_id,
-                                                 text=f"Ваша объявление, к сожалению, не напечатали.\nПо причине:\n{message.text[9:].capitalize()}\n"
+                                                 text=f"Ваше объявление, к сожалению, не напечатали.\nПо причине:\n{message.text[9:].capitalize()}\n"
                                                       + "Перепишите своё объявление!"))
     storage_manager.set_user_state(username, RespondState.WAIT_FOR_CREATING, user_state.chat_id)
     task3 = show_only_form(storage_manager.get_user_by_nick(username), user_state.chat_id)
     await task1
     await task2
     await task3
-    message.chat.id = user_state.chat_id
-    message.from_user.username = user_state.nickname
-    await send_welcome(message)
+    new_message = types.Message(message_id=message.message_id, date=message.date, text=message.text, chat=types.Chat(id=user_state.chat_id, type=message.chat.type), from_user=User(id=message.from_user.id, username=user_state.nickname))
+    await send_welcome(new_message)
 
 
 @dp.message(filters.and_f(filters.command.Command("menu"), lambda message: storage_manager.get_user_state(
