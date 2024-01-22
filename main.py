@@ -20,13 +20,7 @@ bot = Bot(token=API_KEY)
 
 @dp.message(filters.command.Command("start", "restart"))
 async def send_welcome(message: types.Message):
-    markup = types.InlineKeyboardMarkup(
-        inline_keyboard=[[types.InlineKeyboardButton(text="Давай!", callback_data="add_fio")]])
-    task = bot(methods.send_message.SendMessage(chat_id=message.chat.id,
-                                                text="Здравствуй, дорогой друг! Добро пожаловать в наш вестник, где собраны объявления всех людей, которые пока что не нашли себе пару. Мы уверены, что у Вас получится найти спутника на бал ФКН, скорее переходите к поиску!",
-                                                reply_markup=markup))
-    storage_manager.set_user_state(message.from_user.username, RespondState.WAIT_FOR_CREATING, message.chat.id)
-    await task
+    await start_reg(message.chat.id, message.from_user.username)
 
 
 @dp.message(filters.command.Command("admin"))
@@ -47,18 +41,12 @@ async def admin_log(message: types.Message):
 
 @dp.message(lambda message: storage_manager.get_user_state(message.from_user.username) is None)
 async def greeting(message: types.Message):
-    await send_welcome(message)
+    await start_reg(message.chat.id, message.from_user.username)
 
 
 @dp.callback_query(lambda call: storage_manager.get_user_state(call.from_user.username) is None)
 async def greeting_c(call: types.CallbackQuery):
-    markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
-    markup.inline_keyboard.append([types.InlineKeyboardButton(text="Давай!", callback_data="add_fio")])
-    task = bot(methods.send_message.SendMessage(chat_id=call.message.chat.id,
-                                                text="Здравствуй, дорогой друг! Добро пожаловать в наш вестник, где собраны объявления всех людей, которые пока что не нашли себе пару. Мы уверены, что у Вас получится найти спутника на бал ФКН, скорее переходите к поиску!",
-                                                reply_markup=markup))
-    storage_manager.set_user_state(call.from_user.username, RespondState.WAIT_FOR_CREATING, call.message.chat.id)
-    await task
+    await start_reg(call.message.chat.id, call.from_user.username)
 
 
 @dp.message(filters.and_f(filters.command.Command("show"), lambda message: storage_manager.get_user_state(
@@ -115,8 +103,7 @@ async def decline(message: types.Message):
     await task1
     await task2
     await task3
-    new_message = types.Message(message_id=message.message_id, date=message.date, text=message.text, chat=types.Chat(id=user_state.chat_id, type=message.chat.type), from_user=User(id=message.from_user.id, username=user_state.nickname))
-    await send_welcome(new_message)
+    await start_reg(user_state.chat_id, username)
 
 
 @dp.message(filters.and_f(filters.command.Command("menu"), lambda message: storage_manager.get_user_state(
@@ -644,6 +631,16 @@ async def main() -> None:
     await dp.start_polling(bot, skip_updates=True, handle_signals=True, polling_timeout=10, handle_as_tasks=True,
                            close_bot_session=True,
                            backoff_config=BackoffConfig(min_delay=1, max_delay=10, jitter=0.1, factor=1.3))
+
+
+async def start_reg(chat_id, nickname) -> None:
+    markup = types.InlineKeyboardMarkup(
+        inline_keyboard=[[types.InlineKeyboardButton(text="Давай!", callback_data="add_fio")]])
+    task = bot(methods.send_message.SendMessage(chat_id=chat_id,
+                                                text="Здравствуй, дорогой друг! Добро пожаловать в наш вестник, где собраны объявления всех людей, которые пока что не нашли себе пару. Мы уверены, что у Вас получится найти спутника на бал ФКН, скорее переходите к поиску!",
+                                                reply_markup=markup))
+    storage_manager.set_user_state(nickname, RespondState.WAIT_FOR_CREATING, chat_id)
+    await task
 
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
