@@ -77,7 +77,7 @@ async def allow(call):
     task2 = bot.send_message(user_state.chat_id, "Ваша анкета одобрена!")
     storage_manager.set_user_state(username, RespondState.WAIT_FOR_FIND, user_state.chat_id)
     task3 = show_form(storage_manager.get_user_by_nick(username), user_state.chat_id)
-    storage_manager.add_user(User(nickname=call.from_user.username, is_active=True))
+    storage_manager.add_user(User(nickname=username, is_active=True))
     await task1
     await task2
     await task3
@@ -260,7 +260,7 @@ async def set_image(message):
     image_task = bot.get_file(message.photo[-1].file_id)
     downloaded_image_task = bot.download_file((await image_task).file_path)
     task = send_form_finish(message.chat.id, message.from_user.username)
-    path = os.path.join('static', 'user_images', f"{message.from_user.username}.jpg")
+    path = os.path.join('PromBot', 'static', 'user_images', f"{message.from_user.username}.jpg")
     user = storage_manager.get_user_by_nick(message.from_user.username)
     user.image_path = path
     storage_manager.set_user_image_path(message.from_user.username, path)
@@ -306,7 +306,6 @@ async def find(call):
     task = show_user(new_user, call.message.chat.id)
     storage_manager.set_user_state(user.nickname, user_state.state, call.message.chat.id, new_user.nickname)
     await task
-    await asyncio.sleep(0.5)
 
 
 @bot.callback_query_handler(
@@ -465,7 +464,6 @@ async def like_user(call):
     await task2
     await task3
     await task4
-    await asyncio.sleep(0.5)
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -512,7 +510,7 @@ async def show_procfile(user, chat_id):
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(telebot.types.InlineKeyboardButton("Одоборить", callback_data=f"allow_{user.nickname}"),
                telebot.types.InlineKeyboardButton("Отклонить", callback_data=f"decline_{user.nickname}"))
-    await send_form(user, markup, chat_id)
+    await send_form(user, markup, chat_id, True)
 
 
 async def show_menu(chat_id, nickname):
@@ -589,11 +587,12 @@ async def send_form_finish(chat_id, nickname):
     await task
 
 
-async def send_form(user, markup, chat_id):
+async def send_form(user, markup, chat_id, gender=False):
     with open(user.image_path, "rb") as photo:
         await bot.send_photo(chat_id=chat_id, photo=photo, caption=f"{user.name.capitalize()} " +
                                                                    f"{user.surname.capitalize()}\nРост: {user.height}" +
                                                                    f" см.\nО себе:\n{user.brief_info}\n" +
+                                                                   f"{('Пол: М' if user.gender else 'Пол: Ж') if gender else ''}\n" +
                                                                    f"Направление: {user.faculty}\n"
                                                                    + f"Курс: {user.course}\n"
                                                                    + f"Тг: {user}", reply_markup=markup)

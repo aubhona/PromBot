@@ -84,7 +84,8 @@ def get_active_user(gender, last_seen, min_course=1, max_course=6):
         if last_seen is None:
             last_seen = chr(0)
         return (session.query(User)
-                .where(User.is_active and User.gender == (not gender))
+                .where(User.is_active)
+                .where(not User.gender)
                 .where(and_(User.course >= min_course, User.course <= max_course))
                 .order_by(User.nickname)
                 .where(User.nickname > last_seen).first())
