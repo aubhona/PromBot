@@ -380,14 +380,14 @@ async def deactivated_user_mes(message: types.Message):
         message.from_user.username).state == RespondState.WAIT_FOR_ALLOW)
 async def wait_allow_action(message: types.Message):
     await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
-                                               text="Ваша объявление на печати. Как только её одобрят, я Вас уведомлю."))
+                                               text="Ваше объявление в печати. Как только его одобрят, я Вас уведомлю."))
 
 
 @dp.callback_query(
     lambda call: storage_manager.get_user_state(call.from_user.username).state == RespondState.WAIT_FOR_ALLOW)
 async def wait_allow_action_c(call: types.CallbackQuery):
     await bot(methods.send_message.SendMessage(chat_id=call.message.chat.id,
-                                               text="Ваша объявление на печати. Как только её одобрят, я Вас уведомлю."))
+                                               text="Ваше объявление в печати. Как только его одобрят, я Вас уведомлю."))
 
 
 @dp.callback_query(lambda call: call.data == "filter" and storage_manager
@@ -612,19 +612,22 @@ async def send_input_course(chat_id, nickname):
 
 async def send_form_finish(chat_id, nickname):
     markup = types.ReplyKeyboardRemove()
-    task = bot(methods.send_message.SendMessage(chat_id=chat_id, text="Ваше объявление отправлено на проверку перед печатью.",
+    task = bot(methods.send_message.SendMessage(chat_id=chat_id, text="Ваше объявление в печати. Как только его одобрят, я Вас уведомлю.",
                                                 reply_markup=markup))
     storage_manager.set_user_state(nickname, RespondState.WAIT_FOR_ALLOW, chat_id)
     await task
 
 
 async def send_form(user, markup, chat_id, gender=False):
+    gender_info = ''
+    if gender:
+        gender_info = f"{('Пол: М' if user.gender else 'Пол: Ж') if gender else ''}\n"
     await bot(methods.send_photo.SendPhoto(chat_id=chat_id,
                                            photo=types.input_file.BufferedInputFile.from_file(user.image_path),
                                            caption=f"{user.name.capitalize()} " +
                                                    f"{user.surname.capitalize()}\nРост: {user.height}" +
                                                    f" см.\nО себе:\n{user.brief_info}\n" +
-                                                   f"{('Пол: М' if user.gender else 'Пол: Ж') if gender else ''}\n" +
+                                                   gender_info +
                                                    f"Направление: {user.faculty}\n"
                                                    + f"Курс: {user.course}\n"
                                                    + f"Адрес для писем: {user}", reply_markup=markup))
