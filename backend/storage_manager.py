@@ -2,7 +2,7 @@ from backend.models.user import User
 from backend.models.state import State
 from backend.database import Session
 from backend.models.respond_state import *
-from sqlalchemy import and_
+from sqlalchemy import and_, not_, or_, and_
 from cachetools import LRUCache
 
 user_state_cache = LRUCache(maxsize=128)
@@ -84,9 +84,7 @@ def get_active_user(gender, last_seen, min_course=1, max_course=6):
         if last_seen is None:
             last_seen = chr(0)
         return (session.query(User)
-                .where(User.is_active)
-                .where(not User.gender)
-                .where(and_(User.course >= min_course, User.course <= max_course))
+                .filter(and_(User.course >= min_course, User.course <= max_course, User.is_active, not_(User.gender)))
                 .order_by(User.nickname)
                 .where(User.nickname > last_seen).first())
     finally:
