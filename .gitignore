@@ -2,3 +2,4 @@ prom.db
 config.py
 static/user_images
 __pycache__
+venv

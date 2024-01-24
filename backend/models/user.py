@@ -1,20 +1,20 @@
-from sqlalchemy import Column, String, Boolean, Double, Integer
+from sqlalchemy import Column, String, Boolean, Float, Integer
 from backend.database import Base
 
 
 class User(Base):
     __tablename__ = 'users'
 
-    nickname = Column(String, primary_key=True)
-    name = Column(String)
-    surname = Column(String)
-    height = Column(Double)
+    nickname = Column(String(255), primary_key=True)
+    name = Column(String(255))
+    surname = Column(String(255))
+    height = Column(Float)
     gender = Column(Boolean)
-    image_path = Column(String, unique=True)
-    faculty = Column(String)
+    image_path = Column(String(255), unique=True)
+    faculty = Column(String(255))
     is_active = Column(Boolean, index=True)
     course = Column(Integer, index=True)
-    brief_info = Column(String)
+    brief_info = Column(String(500))
 
     def __repr__(self) -> str:
         return f"@{self.nickname}"

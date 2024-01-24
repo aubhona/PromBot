@@ -278,7 +278,7 @@ async def set_image(message: types.Message):
         await send_input_image(message.chat.id, message.from_user.username)
         return
     image_task = bot(methods.get_file.GetFile(file_id=message.photo[-1].file_id))
-    path = os.path.join('static', 'user_images', f"{message.from_user.username}.jpg")
+    path = os.path.join('PromBot', 'static', 'user_images', f"{message.from_user.username}.jpg")
     task1 = storage_manager.set_user_image_path(message.from_user.username, path)
     user_task = storage_manager.get_user_by_nick(message.from_user.username)
     downloaded_image_task = bot.download((await image_task), destination=path)

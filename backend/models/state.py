@@ -7,9 +7,9 @@ from backend.models.respond_state import RespondState
 class State(Base):
     __tablename__ = 'states'
 
-    nickname = Column(String, primary_key=True)
+    nickname = Column(String(255), primary_key=True)
     state = Column(SQLAlchemyEnum(RespondState), index=True)
-    last_seen = Column(String)
+    last_seen = Column(String(255))
     chat_id = Column(Integer)
     filter_value = Column(Integer)
 
