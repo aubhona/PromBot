@@ -53,12 +53,14 @@ async def set_user_state(user_nickname, state, chat_id, last_seen=None, filter_v
         if not user_state:
             session.add(State(nickname=user_nickname, state=state, chat_id=chat_id, last_seen=last_seen,
                               filter_value=filter_value))
+            await session.commit()
             return
         user_state.state = state
         if last_seen is not None:
             user_state.last_seen = last_seen
         if filter_value is not None:
             user_state.filter_value = filter_value
+        await session.commit()
 
 
 async def add_user(new_user):
@@ -69,8 +71,10 @@ async def add_user(new_user):
         user = result.scalars().first()
         if user is None:
             session.add(new_user)
+            await session.commit()
             return
         user.set_other(new_user)
+        await session.commit()
         return
 
 
