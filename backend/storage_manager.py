@@ -1,10 +1,11 @@
-from backend.models.user import User
-from backend.models.state import State
-from backend.database import *
-from sqlalchemy.future import select
-from backend.models.respond_state import *
-from sqlalchemy import and_, not_
 from cachetools import LRUCache
+from sqlalchemy import and_
+from sqlalchemy.future import select
+
+from backend.database import *
+from backend.models.respond_state import *
+from backend.models.state import State
+from backend.models.user import User
 
 user_state_cache = LRUCache(maxsize=128)
 
@@ -84,7 +85,8 @@ async def get_active_user(gender, last_seen, min_course=1, max_course=6):
             last_seen = chr(0)
         result = await session.execute(
             select(User).where(and_(User.course >= min_course, User.course <= max_course, User.is_active,
-                                    User.gender == not_(gender))).order_by(User.nickname).where(User.nickname > last_seen)
+                                    (User.gender == (not gender)))).order_by(User.nickname).where(
+                User.nickname > last_seen)
         )
         return result.scalars().first()
 
