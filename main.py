@@ -537,10 +537,10 @@ async def like_user(call: types.CallbackQuery):
 @dp.message(filters.command.Command("test"))
 async def show_db(message: types.Message):
     for i in (await storage_manager.get_users()):
-        await bot(methods.send_message.SendMessage(chat_id=ADMIN_CHAT_ID,
+        await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
                                                text=f"user_nick = {i.nickname}, active = {i.is_active}, gender = {i.gender}"))
     for i in (await storage_manager.get_states()):
-        await bot(methods.send_message.SendMessage(chat_id=ADMIN_CHAT_ID,
+        await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
                                                    text=f"user_nick = {i.nickname}, state = {i.state}, chat_id = {i.chat_id}, filter_value = {i.filter_value}, last_seen = {i.last_seen}"))
 
 
