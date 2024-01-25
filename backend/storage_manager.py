@@ -89,9 +89,7 @@ async def get_active_user(gender, last_seen, min_course=1, max_course=7):
             last_seen = chr(0)
         result = await session.execute(
             select(User).where(and_(User.course >= min_course, User.course <= max_course, User.is_active,
-                                    (User.gender == (not gender)))).order_by(User.nickname).where(
-                User.nickname > last_seen)
-        )
+                                    (User.gender == (not gender)), User.nickname > last_seen)).order_by(User.nickname))
         return result.scalars().first()
 
 
