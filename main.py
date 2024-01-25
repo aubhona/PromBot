@@ -539,10 +539,11 @@ async def show_db(message: types.Message):
     for i in (await storage_manager.get_users()):
         await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
                                                text=f"user_nick = {i.nickname}, active = {i.is_active}, gender = {i.gender}"))
+        await asyncio.sleep(1)
     for i in (await storage_manager.get_states()):
         await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
                                                    text=f"user_nick = {i.nickname}, state = {i.state}, chat_id = {i.chat_id}, filter_value = {i.filter_value}, last_seen = {i.last_seen}"))
-
+        await asyncio.sleep(1)
 
 @dp.message(filters.command.Command("help"))
 async def help_user(message: types.Message):
