@@ -21,7 +21,7 @@ async def get_user_by_nick(user_nickname):
 async def get_users():
     async with async_session() as session:
         result = await session.execute(
-            select(User)
+            select(User).where(User.height >= 0)
         )
         return result.scalars().all()
 
@@ -29,7 +29,7 @@ async def get_users():
 async def get_states():
     async with async_session() as session:
         result = await session.execute(
-            select(State)
+            select(State).where(State.filter_value >= 0)
         )
         return result.scalars().all()
 

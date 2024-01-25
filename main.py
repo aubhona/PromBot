@@ -514,7 +514,7 @@ async def unknown_filter_message(message: types.Message):
                                                                              user_state in user_states))
 async def like_user(call: types.CallbackQuery):
     user_state = await storage_manager.get_user_state(call.data[6:])
-    if user_state is {RespondState.WAIT_MENU, RespondState.WAIT_FOR_FIND, RespondState.WAIT_FOR_CHANGE_FILTER_1,
+    if user_state not in {RespondState.WAIT_MENU, RespondState.WAIT_FOR_FIND, RespondState.WAIT_FOR_CHANGE_FILTER_1,
                       RespondState.WAIT_FOR_CHANGE_FILTER_2, RespondState.WAIT_CHANGE}:
         await bot.send_message(chat_id=call.message.chat.id,
                                text="Пользователь в данный момет не активен. Вы не можете не лайкнуть.")
@@ -563,11 +563,11 @@ async def answer_help_user_1(call: types.CallbackQuery):
                                                text=f"Напишите сообщение для пользователя."))
 
 
-@dp.message(
-    StateFilter({RespondState.ADMIN}, lambda user_states, user_state: user_state in user_states))
+@dp.message(filters.and_f(filters.command.Command("mes"),
+    StateFilter({RespondState.ADMIN}, lambda user_states, user_state: user_state in user_states)))
 async def answer_help_user_2(message: types.Message):
     await bot(methods.send_message.SendMessage(chat_id=int((await storage_manager.get_user_state(message.from_user.username)).last_seen),
-                                               text=f"Письмо от тех. поддержки:\n{message.text}"))
+                                               text=f"Письмо от тех. поддержки:\n{message.text[5:]}"))
     await bot(methods.send_message.SendMessage(chat_id=message.chat.id, text="Пиьсмо успешно отправлено"))
 
 
