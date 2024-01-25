@@ -20,20 +20,13 @@ async def get_user_by_nick(user_nickname):
 
 async def get_users():
     async with async_session() as session:
-        gender = True
-        last_seen = chr(0)
-        result = await session.execute(
-            select(User).where(and_(User.is_active,
-                                    (User.gender == (not gender)))).order_by(User.nickname)
-        )
+        result = await session.execute(select(User))
         return result.scalars().all()
 
 
 async def get_states():
     async with async_session() as session:
-        result = await session.execute(
-            select(State).where(State.state != RespondState.WAIT_CHANGE)
-        )
+        result = await session.execute(select(State))
         return result.scalars().all()
 
 

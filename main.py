@@ -153,8 +153,8 @@ async def change_form_confirm(call: types.CallbackQuery):
     if (await storage_manager.get_user_state(call.from_user.username)).state == RespondState.WAIT_MENU:
         task1 = storage_manager.set_user_state(call.from_user.username, RespondState.WAIT_CHANGE, call.message.chat.id)
         markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
-        markup.inline_keyboard.append([types.InlineKeyboardButton(text="Да", callback_data="change_form"),
-                                       types.InlineKeyboardButton(text="Нет", callback_data="menu")])
+        markup.inline_keyboard.append([types.InlineKeyboardButton(text="✅", callback_data="change_form"),
+                                       types.InlineKeyboardButton(text="❌", callback_data="menu")])
         task = bot(methods.send_message.SendMessage(chat_id=call.message.chat.id,
                                                     text="Вы уверены, что хотите внести изменения в объявление? (Оно отправится на перепечать, что займёт время).",
                                                     reply_markup=markup))
@@ -419,8 +419,8 @@ async def wait_allow_action_c(call: types.CallbackQuery):
 async def input_filter(call: types.CallbackQuery):
     user_state_task = storage_manager.get_user_state(call.from_user.username)
     markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
-    markup.inline_keyboard.append([types.InlineKeyboardButton(text="Нет", callback_data='find'),
-                                   types.InlineKeyboardButton(text="Да", callback_data='change_filter')])
+    markup.inline_keyboard.append([types.InlineKeyboardButton(text="✅", callback_data='change_filter'),
+                                   types.InlineKeyboardButton(text="❌", callback_data='find')])
     user_state = await user_state_task
     await bot(methods.send_message.SendMessage(chat_id=call.message.chat.id,
                                                text=f"Вам показаны объявления от {user_state.filter_value // 10} "
@@ -535,7 +535,7 @@ async def like_user(call: types.CallbackQuery):
 
 
 @dp.message(filters.command.Command("test"))
-async def show_db():
+async def show_db(message: types.Message):
     for i in (await storage_manager.get_users()):
         await bot(methods.send_message.SendMessage(chat_id=ADMIN_CHAT_ID,
                                                text=f"user_nick = {i.nickname}, active = {i.is_active}, gender = {i.gender}"))
@@ -546,9 +546,11 @@ async def show_db():
 
 @dp.message(filters.command.Command("help"))
 async def help_user(message: types.Message):
+    if message.text == "/help":
+        await bot(methods.send_message.SendMessage(chat_id=message.chat.id, text="Отправьте вместе с /help через пробел сообщение для тех. поддержки."))
+        return
     markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
     markup.inline_keyboard.append([types.InlineKeyboardButton(text="Ответить", callback_data=f"answer_{str(message.chat.id)}")])
-    print(message.chat.id)
     await bot(methods.send_message.SendMessage(chat_id=ADMIN_CHAT_ID,
                                                text=f"Письмо помощи от @{message.from_user.username}\n{message.text[6:]}",
                                                reply_markup=markup))
@@ -564,8 +566,7 @@ async def answer_help_user_1(call: types.CallbackQuery):
                                                text=f"Напишите сообщение для пользователя."))
 
 
-@dp.message(filters.and_f(filters.command.Command("mes"),
-    StateFilter({RespondState.ADMIN}, lambda user_states, user_state: user_state in user_states)))
+@dp.message(filters.and_f(filters.command.Command("mes"), StateFilter({RespondState.ADMIN}, lambda user_states, user_state: user_state in user_states)))
 async def answer_help_user_2(message: types.Message):
     await bot(methods.send_message.SendMessage(chat_id=int((await storage_manager.get_user_state(message.from_user.username)).last_seen),
                                                text=f"Письмо от тех. поддержки:\n{message.text[5:]}"))
@@ -691,7 +692,7 @@ async def send_input_course(chat_id, nickname):
     markup.inline_keyboard.append([types.InlineKeyboardButton(text="Другое", callback_data="7")])
     task = bot(methods.send_message.SendMessage(chat_id=chat_id,
                                                 text="Выберите номер вашего курса (если вы учтитесь на магистратуре 1 курса, "
-                                                     + "то выбирайте 5 курс и т.д.)\nЕсли вы выпускник/админ, выберите 'Другое'.",
+                                                     + "то выбирайте 5 курс и т.д.)\nЕсли вы не находите свой курс (выпускник, сотрудник и т.д.), то выберите 'Другое'.",
                                                 reply_markup=markup))
     await task1
     await task
