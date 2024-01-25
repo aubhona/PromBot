@@ -100,6 +100,7 @@ async def decline_mes(call: types.CallbackQuery):
 async def decline(message: types.Message):
     admin_user_state = await storage_manager.get_user_state(message.from_user.username)
     username = admin_user_state.last_seen
+    task4 = storage_manager.add_user(User(nickname=username, is_active=False))
     user_task = storage_manager.get_user_by_nick(username)
     task1 = bot(
         methods.send_message.SendMessage(chat_id=message.chat.id, text=f"Анкета @{username} успешно отклонена!"))
@@ -112,6 +113,7 @@ async def decline(message: types.Message):
     await task1
     await task2
     await task3
+    await task4
     await start_reg(user_state.chat_id, username)
 
 
@@ -250,7 +252,8 @@ async def input_course_set_faculty_m(message: types.Message):
 
 
 @dp.callback_query(CallBackStateFilter({RespondState.WAIT_FOR_CREATING_COURSE},
-                                       lambda user_states, user_state, data: data in {"1", "2", "3", "4", "5", "6"} and
+                                       lambda user_states, user_state, data: data in {"1", "2", "3", "4", "5", "6",
+                                                                                      "7"} and
                                                                              user_state in user_states)
                    )
 async def input_image_set_course_m(call: types.CallbackQuery):
@@ -272,12 +275,13 @@ async def input_course_m(message: types.Message):
     await send_input_course(message.chat.id, message.from_user.username)
 
 
-@dp.message(StateFilter({RespondState.WAIT_FOR_CREATING_IMAGE}, lambda user_states, user_state: user_state in user_states))
+@dp.message(
+    StateFilter({RespondState.WAIT_FOR_CREATING_IMAGE}, lambda user_states, user_state: user_state in user_states))
 async def set_image(message: types.Message):
     if message.content_type != types.ContentType.PHOTO:
         await send_input_image(message.chat.id, message.from_user.username)
         return
-    image_task = bot(methods.get_file.GetFile(file_id=message.photo[-1].file_id))
+    image_task = bot(methods.get_file.GetFile(file_id=message.photo[-2].file_id))
     path = os.path.join('PromBot', 'static', 'user_images', f"{message.from_user.username}.jpg")
     task1 = storage_manager.set_user_image_path(message.from_user.username, path)
     user_task = storage_manager.get_user_by_nick(message.from_user.username)
@@ -431,7 +435,10 @@ async def change_filter(call: types.CallbackQuery):
                                            call.message.chat.id)
     markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
     for i in range(1, 7):
-        markup.inline_keyboard.append([types.InlineKeyboardButton(text=str(i), callback_data=str(i))])
+        if i <= 6:
+            markup.inline_keyboard.append([types.InlineKeyboardButton(text=str(i), callback_data=str(i))])
+            continue
+        markup.inline_keyboard.append([types.InlineKeyboardButton(text="6+", callback_data=str(i))])
 
     task = bot(
         methods.send_message.SendMessage(chat_id=call.message.chat.id, text="Выберите минимальный курс для просмотра.",
@@ -441,16 +448,20 @@ async def change_filter(call: types.CallbackQuery):
 
 
 @dp.callback_query(CallBackStateFilter({RespondState.ADMIN, RespondState.WAIT_FOR_CHANGE_FILTER_1},
-                                       lambda user_states, user_state, data: data in {"1", "2", "3", "4", "5", "6"} and
+                                       lambda user_states, user_state, data: data in {"1", "2", "3", "4", "5", "6",
+                                                                                      "7"} and
                                                                              user_state in user_states))
 async def process_select_min(call: types.CallbackQuery):
     min_course = int(call.data)
     task1 = storage_manager.set_user_state(call.from_user.username, RespondState.WAIT_FOR_CHANGE_FILTER_2,
                                            call.message.chat.id,
-                                           filter_value=f"{min_course}6")
+                                           filter_value=f"{min_course}7")
     markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
-    for i in range(min_course, 7):
-        markup.inline_keyboard.append([types.InlineKeyboardButton(text=str(i), callback_data=str(i))])
+    for i in range(min_course, 8):
+        if i <= 6:
+            markup.inline_keyboard.append([types.InlineKeyboardButton(text=str(i), callback_data=str(i))])
+            continue
+        markup.inline_keyboard.append([types.InlineKeyboardButton(text="6+", callback_data=str(i))])
 
     task = bot(
         methods.send_message.SendMessage(chat_id=call.message.chat.id,
@@ -461,7 +472,8 @@ async def process_select_min(call: types.CallbackQuery):
 
 
 @dp.callback_query(CallBackStateFilter({RespondState.ADMIN, RespondState.WAIT_FOR_CHANGE_FILTER_2},
-                                       lambda user_states, user_state, data: data in {"1", "2", "3", "4", "5", "6"} and
+                                       lambda user_states, user_state, data: data in {"1", "2", "3", "4", "5", "6",
+                                                                                      "7"} and
                                                                              user_state in user_states))
 async def process_select_max(call: types.CallbackQuery):
     max_course = int(call.data)
@@ -491,7 +503,7 @@ async def unknown_filter_call(call: types.CallbackQuery):
 
 
 @dp.message(StateFilter({RespondState.WAIT_FOR_CHANGE_FILTER_1, RespondState.WAIT_FOR_CHANGE_FILTER_2},
-                                       lambda user_states, user_state: user_state in user_states))
+                        lambda user_states, user_state: user_state in user_states))
 async def unknown_filter_message(message: types.Message):
     await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
                                                text="Отправьте правильное сообщение точно по инструкциям."))
@@ -502,11 +514,17 @@ async def unknown_filter_message(message: types.Message):
                                                                              user_state in user_states))
 async def like_user(call: types.CallbackQuery):
     user_state = await storage_manager.get_user_state(call.data[6:])
+    if user_state is {RespondState.WAIT_MENU, RespondState.WAIT_FOR_FIND, RespondState.WAIT_FOR_CHANGE_FILTER_1,
+                      RespondState.WAIT_FOR_CHANGE_FILTER_2, RespondState.WAIT_CHANGE}:
+        await bot.send_message(chat_id=call.message.chat.id,
+                               text="Пользователь в данный момет не активен. Вы не можете не лайкнуть.")
+        return
     user_task = storage_manager.get_user_by_nick(call.from_user.username)
+    user = await user_task
     task1 = bot(
         methods.send_message.SendMessage(chat_id=user_state.chat_id,
-                                         text="Вы приглянулись кое-кому, скорее напишите ему весточку:"))
-    task2 = show_user((await user_task), user_state.chat_id)
+                                         text=f"Вы приглянулись кое-кому, скорее напишите {('ему' if user.gender else 'ей')} весточку:"))
+    task2 = show_user(user, user_state.chat_id)
     task3 = bot(methods.send_message.SendMessage(chat_id=call.message.chat.id,
                                                  text=f"Вы отдали свое сердце @{user_state.nickname}."))
     task4 = find(call)
@@ -516,24 +534,53 @@ async def like_user(call: types.CallbackQuery):
     await task4
 
 
-# @dp.callback_query(lambda call: True)
-# async def anything(call: types.CallbackQuery):
-#     task = methods.send_message.SendMessage(call.message.chat.id, "Некорректное действие. Следуйте строго моим инструкциям.")
-#     user_state = storage_manager.get_user_state(call.from_user.username)
-#     await methods.send_message.SendMessage(HELP_CHAT_ID, call.data)
-#     await methods.send_message.SendMessage(HELP_CHAT_ID, str(user_state.state))
-#     await methods.send_message.SendMessage(HELP_CHAT_ID, f"@{str(user_state.nickname)}")
-#     await task
-#
-#
-# @dp.message()
-# async def anything(message: types.Message):
-#     task = methods.send_message.SendMessage(message.chat.id, "Некорректное действие. Следуйте строго моим инструкциям.")
-#     user_state = storage_manager.get_user_state(message.from_user.username)
-#     await methods.send_message.SendMessage(HELP_CHAT_ID, message.text)
-#     await methods.send_message.SendMessage(HELP_CHAT_ID, str(user_state.state))
-#     await methods.send_message.SendMessage(HELP_CHAT_ID, f"@{str(user_state.nickname)}")
-#     await task
+@dp.message(filters.command.Command("test"))
+async def show_db():
+    for i in (await storage_manager.get_users()):
+        await bot(methods.send_message.SendMessage(chat_id=ADMIN_CHAT_ID,
+                                               text=f"user_nick = {i.nickname}, active = {i.is_active}, gender = {i.gender}"))
+    for i in (await storage_manager.get_states()):
+        await bot(methods.send_message.SendMessage(chat_id=ADMIN_CHAT_ID,
+                                                   text=f"user_nick = {i.nickname}, state = {i.state}, chat_id = {i.chat_id}, filter_value = {i.filter_value}, last_seen = {i.last_seen}"))
+
+
+@dp.message(filters.command.Command("help"))
+async def help_user(message: types.Message):
+    markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
+    markup.inline_keyboard.append([types.InlineKeyboardButton(text="Ответить", callback_data=str(message.chat.id))])
+    await bot(methods.send_message.SendMessage(chat_id=ADMIN_CHAT_ID,
+                                               text=f"Письмо помощи от @{message.from_user.username}\n{message.text[6:]}",
+                                               reply_markup=markup))
+    await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
+                                               text="Мы отправили ваше сообщение в тех. поддержку. Вам придёт ответное письмо."))
+
+
+@dp.callback_query(
+    CallBackStateFilter({RespondState.ADMIN}, lambda user_states, user_state, data: user_state in user_states))
+async def answer_help_user_1(call: types.CallbackQuery):
+    await storage_manager.set_user_state(call.from_user.username, RespondState.ADMIN, call.data)
+    await bot(methods.send_message.SendMessage(chat_id=int(call.message.chat.id),
+                                               text=f"Напишите сообщение для пользователя."))
+
+
+@dp.message(
+    StateFilter({RespondState.ADMIN}, lambda user_states, user_state: user_state in user_states))
+async def answer_help_user_2(message: types.Message):
+    await bot(methods.send_message.SendMessage(chat_id=int((await storage_manager.get_user_state(message.from_user.username)).last_seen),
+                                               text=f"Письмо от тех. поддержки:\n{message.text}"))
+    await bot(methods.send_message.SendMessage(chat_id=message.chat.id, text="Пиьсмо успешно отправлено"))
+
+
+@dp.callback_query()
+async def anything(call: types.CallbackQuery):
+    await bot(methods.send_message.SendMessage(chat_id=call.message.chat.id,
+                                               text="Отправьте правильное сообщение точно по инструкциям."))
+
+
+@dp.message()
+async def anything(message: types.Message):
+    await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
+                                               text="Некорректное действие. Следуйте строго моим инструкциям."))
 
 
 async def show_user(user, chat_id):
@@ -583,8 +630,8 @@ async def show_menu(chat_id, nickname):
 async def send_choose_gender(chat_id, nickname):
     task1 = storage_manager.set_user_state(nickname, RespondState.WAIT_FOR_CREATING_GENDER, chat_id)
     markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
-    markup.inline_keyboard.append([types.InlineKeyboardButton(text="Я сударь", callback_data='True'),
-                                   types.InlineKeyboardButton(text="Я сударыня", callback_data='False')])
+    markup.inline_keyboard.append([types.InlineKeyboardButton(text="Я кавалер", callback_data='True'),
+                                   types.InlineKeyboardButton(text="Я дама", callback_data='False')])
     task = bot(methods.send_message.SendMessage(chat_id=chat_id, text="Выберите Ваш пол:", reply_markup=markup))
     await task1
     await task
@@ -636,13 +683,15 @@ async def send_input_course(chat_id, nickname):
     markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
     markup.inline_keyboard.append([types.InlineKeyboardButton(text="1", callback_data="1"),
                                    types.InlineKeyboardButton(text="2", callback_data="2"),
-                                   types.InlineKeyboardButton(text="3", callback_data="3"),
-                                   types.InlineKeyboardButton(text="4", callback_data="4"),
+                                   types.InlineKeyboardButton(text="3", callback_data="3")])
+    markup.inline_keyboard.append([types.InlineKeyboardButton(text="4", callback_data="4"),
                                    types.InlineKeyboardButton(text="5", callback_data="5"),
                                    types.InlineKeyboardButton(text="6", callback_data="6")])
+    markup.inline_keyboard.append([types.InlineKeyboardButton(text="Другое", callback_data="7")])
     task = bot(methods.send_message.SendMessage(chat_id=chat_id,
                                                 text="Выберите номер вашего курса (если вы учтитесь на магистратуре 1 курса, "
-                                                     + "то выбирайте 5 курс и т.д.).", reply_markup=markup))
+                                                     + "то выбирайте 5 курс и т.д.)\nЕсли вы выпускник/админ, выберите 'Другое'.",
+                                                reply_markup=markup))
     await task1
     await task
 
@@ -683,7 +732,7 @@ async def send_input_brief_info(chat_id, nickname):
 
 
 async def main() -> None:
-    await dp.start_polling(bot, skip_updates=True, handle_signals=True, polling_timeout=10, handle_as_tasks=True,
+    await dp.start_polling(bot, updates=False, handle_signals=True, polling_timeout=10, handle_as_tasks=True,
                            close_bot_session=True,
                            backoff_config=BackoffConfig(min_delay=1, max_delay=10, jitter=0.1, factor=1.3))
 

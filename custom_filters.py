@@ -10,7 +10,7 @@ class StateFilter(Filter):
 
     async def __call__(self, message: types.Message) -> bool:
         user_state = await get_user_state(message.from_user.username)
-        return self.predicate(self.required_states, user_state.state)
+        return self.predicate(self.required_states, user_state.state if user_state else None)
 
 
 class CallBackStateFilter(Filter):
@@ -20,4 +20,4 @@ class CallBackStateFilter(Filter):
 
     async def __call__(self, call: types.CallbackQuery) -> bool:
         user_state = await get_user_state(call.from_user.username)
-        return self.predicate(self.required_states, user_state.state, call.data)
+        return self.predicate(self.required_states, user_state.state if user_state else None, call.data)

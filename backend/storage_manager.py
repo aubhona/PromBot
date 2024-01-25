@@ -18,12 +18,20 @@ async def get_user_by_nick(user_nickname):
         return result.scalars().first()
 
 
-# def get_active_users(gender):
-#     session = Session()
-#     try:
-#         return session.query(User).filter(User.is_active and User.gender == (not gender)).all()
-#     finally:
-#         session.close()
+async def get_users():
+    async with async_session() as session:
+        result = await session.execute(
+            select(User)
+        )
+        return result.scalars().all()
+
+
+async def get_states():
+    async with async_session() as session:
+        result = await session.execute(
+            select(State)
+        )
+        return result.scalars().all()
 
 
 def invalidate_user_state(user_nickname):
@@ -79,7 +87,7 @@ async def add_user(new_user):
         return
 
 
-async def get_active_user(gender, last_seen, min_course=1, max_course=6):
+async def get_active_user(gender, last_seen, min_course=1, max_course=7):
     async with async_session() as session:
         if last_seen is None:
             last_seen = chr(0)
