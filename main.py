@@ -547,7 +547,8 @@ async def show_db():
 @dp.message(filters.command.Command("help"))
 async def help_user(message: types.Message):
     markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
-    markup.inline_keyboard.append([types.InlineKeyboardButton(text="Ответить", callback_data=str(message.chat.id))])
+    markup.inline_keyboard.append([types.InlineKeyboardButton(text="Ответить", callback_data=f"answer_{str(message.chat.id)}")])
+    print(message.chat.id)
     await bot(methods.send_message.SendMessage(chat_id=ADMIN_CHAT_ID,
                                                text=f"Письмо помощи от @{message.from_user.username}\n{message.text[6:]}",
                                                reply_markup=markup))
@@ -556,9 +557,9 @@ async def help_user(message: types.Message):
 
 
 @dp.callback_query(
-    CallBackStateFilter({RespondState.ADMIN}, lambda user_states, user_state, data: user_state in user_states))
+    CallBackStateFilter({RespondState.ADMIN}, lambda user_states, user_state, data: data.startswith("answer") and user_state in user_states))
 async def answer_help_user_1(call: types.CallbackQuery):
-    await storage_manager.set_user_state(call.from_user.username, RespondState.ADMIN, call.data)
+    await storage_manager.set_user_state(call.from_user.username, RespondState.ADMIN, call.message.chat.id, last_seen=call.data[7:])
     await bot(methods.send_message.SendMessage(chat_id=int(call.message.chat.id),
                                                text=f"Напишите сообщение для пользователя."))
 
