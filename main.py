@@ -303,8 +303,7 @@ async def set_image(message: types.Message):
 
 
 @dp.callback_query(
-    CallBackStateFilter({RespondState.WAIT_FOR_CREATING_IMAGE}, lambda user_states, user_state, _: user_state
-                                                                                                   in user_states))
+    CallBackStateFilter({RespondState.WAIT_FOR_CREATING_IMAGE}, lambda user_states, user_state, _: user_state in user_states))
 async def set_image_c(call: types.CallbackQuery):
     await send_input_image(call.message.chat.id, call.from_user.username)
 
@@ -515,7 +514,7 @@ async def unknown_filter_message(message: types.Message):
 async def like_user(call: types.CallbackQuery):
     user_state = await storage_manager.get_user_state(call.data[6:])
     if user_state not in {RespondState.WAIT_MENU, RespondState.WAIT_FOR_FIND, RespondState.WAIT_FOR_CHANGE_FILTER_1,
-                      RespondState.WAIT_FOR_CHANGE_FILTER_2, RespondState.WAIT_CHANGE}:
+                          RespondState.WAIT_FOR_CHANGE_FILTER_2, RespondState.WAIT_CHANGE}:
         await bot.send_message(chat_id=call.message.chat.id,
                                text="Пользователь в данный момет не активен. Вы не можете не лайкнуть.")
         return
@@ -534,24 +533,15 @@ async def like_user(call: types.CallbackQuery):
     await task4
 
 
-@dp.message(filters.command.Command("test"))
-async def show_db(message: types.Message):
-    for i in (await storage_manager.get_users()):
-        await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
-                                               text=f"user_nick = {i.nickname}, active = {i.is_active}, gender = {i.gender}"))
-        await asyncio.sleep(1)
-    for i in (await storage_manager.get_states()):
-        await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
-                                                   text=f"user_nick = {i.nickname}, state = {i.state}, chat_id = {i.chat_id}, filter_value = {i.filter_value}, last_seen = {i.last_seen}"))
-        await asyncio.sleep(1)
-
 @dp.message(filters.command.Command("help"))
 async def help_user(message: types.Message):
     if message.text == "/help":
-        await bot(methods.send_message.SendMessage(chat_id=message.chat.id, text="Отправьте вместе с /help через пробел сообщение для тех. поддержки."))
+        await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
+                                                   text="Отправьте вместе с /help через пробел сообщение для тех. поддержки."))
         return
     markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
-    markup.inline_keyboard.append([types.InlineKeyboardButton(text="Ответить", callback_data=f"answer_{str(message.chat.id)}")])
+    markup.inline_keyboard.append(
+        [types.InlineKeyboardButton(text="Ответить", callback_data=f"answer_{str(message.chat.id)}")])
     await bot(methods.send_message.SendMessage(chat_id=ADMIN_CHAT_ID,
                                                text=f"Письмо помощи от @{message.from_user.username}\n{message.text[6:]}",
                                                reply_markup=markup))
@@ -560,17 +550,21 @@ async def help_user(message: types.Message):
 
 
 @dp.callback_query(
-    CallBackStateFilter({RespondState.ADMIN}, lambda user_states, user_state, data: data.startswith("answer") and user_state in user_states))
+    CallBackStateFilter({RespondState.ADMIN},
+                        lambda user_states, user_state, data: data.startswith("answer") and user_state in user_states))
 async def answer_help_user_1(call: types.CallbackQuery):
-    await storage_manager.set_user_state(call.from_user.username, RespondState.ADMIN, call.message.chat.id, last_seen=call.data[7:])
+    await storage_manager.set_user_state(call.from_user.username, RespondState.ADMIN, call.message.chat.id,
+                                         last_seen=call.data[7:])
     await bot(methods.send_message.SendMessage(chat_id=int(call.message.chat.id),
                                                text=f"Напишите сообщение для пользователя."))
 
 
-@dp.message(filters.and_f(filters.command.Command("mes"), StateFilter({RespondState.ADMIN}, lambda user_states, user_state: user_state in user_states)))
+@dp.message(filters.and_f(filters.command.Command("mes"),
+                          StateFilter({RespondState.ADMIN}, lambda user_states, user_state: user_state in user_states)))
 async def answer_help_user_2(message: types.Message):
-    await bot(methods.send_message.SendMessage(chat_id=int((await storage_manager.get_user_state(message.from_user.username)).last_seen),
-                                               text=f"Письмо от тех. поддержки:\n{message.text[5:]}"))
+    await bot(methods.send_message.SendMessage(
+        chat_id=int((await storage_manager.get_user_state(message.from_user.username)).last_seen),
+        text=f"Письмо от тех. поддержки:\n{message.text[5:]}"))
     await bot(methods.send_message.SendMessage(chat_id=message.chat.id, text="Пиьсмо успешно отправлено"))
 
 
@@ -735,7 +729,7 @@ async def send_input_brief_info(chat_id, nickname):
 
 
 async def main() -> None:
-    await dp.start_polling(bot, updates=False, handle_signals=True, polling_timeout=10, handle_as_tasks=True,
+    await dp.start_polling(bot, handle_signals=True, polling_timeout=10, handle_as_tasks=True,
                            close_bot_session=True,
                            backoff_config=BackoffConfig(min_delay=1, max_delay=10, jitter=0.1, factor=1.3))
 
