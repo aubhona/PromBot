@@ -549,10 +549,11 @@ async def unknown_filter_message(message: types.Message):
                                                                              user_state in user_states))
 async def like_user(call: types.CallbackQuery):
     user_state = await storage_manager.get_user_state(call.data[6:])
-    if user_state not in {RespondState.WAIT_MENU, RespondState.WAIT_FOR_FIND, RespondState.WAIT_FOR_CHANGE_FILTER_1,
-                          RespondState.WAIT_FOR_CHANGE_FILTER_2, RespondState.WAIT_CHANGE}:
+    if user_state.state not in {RespondState.WAIT_MENU, RespondState.WAIT_FOR_FIND,
+                                RespondState.WAIT_FOR_CHANGE_FILTER_1,
+                                RespondState.WAIT_FOR_CHANGE_FILTER_2, RespondState.WAIT_CHANGE}:
         await bot.send_message(chat_id=call.message.chat.id,
-                               text="Пользователь в данный момет не активен. Вы не можете не лайкнуть.")
+                               text="Пользователь в данный момет не активен. Вы не можете лайкнуть.")
         return
     user_task = storage_manager.get_user_by_nick(call.from_user.username)
     user = await user_task
