@@ -29,7 +29,7 @@ async def help_user(message: types.Message):
     markup.inline_keyboard.append(
         [types.InlineKeyboardButton(text="Ответить", callback_data=f"answer_{str(message.chat.id)}")])
     await bot(methods.send_message.SendMessage(chat_id=ADMIN_CHAT_ID,
-                                               text=f"Письмо помощи от @{message.from_user.username}\n{message.text[6:]}",
+                                               text=f"Пиcьмо помощи от @{message.from_user.username}\n{message.text[6:]}",
                                                reply_markup=markup))
     await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
                                                text="Мы отправили ваше сообщение в тех. поддержку. Вам придёт ответное письмо."))
@@ -469,7 +469,7 @@ async def change_filter(call: types.CallbackQuery):
     task1 = storage_manager.set_user_state(call.from_user.username, RespondState.WAIT_FOR_CHANGE_FILTER_1,
                                            call.message.chat.id)
     markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
-    for i in range(1, 7):
+    for i in range(1, 8):
         if i <= 6:
             markup.inline_keyboard.append([types.InlineKeyboardButton(text=str(i), callback_data=str(i))])
             continue
