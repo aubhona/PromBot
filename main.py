@@ -19,6 +19,22 @@ dp = Dispatcher()
 bot = Bot(token=API_KEY)
 
 
+@dp.message(filters.command.Command("help"))
+async def help_user(message: types.Message):
+    if message.text == "/help":
+        await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
+                                                   text="Отправьте вместе с /help через пробел сообщение для тех. поддержки."))
+        return
+    markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
+    markup.inline_keyboard.append(
+        [types.InlineKeyboardButton(text="Ответить", callback_data=f"answer_{str(message.chat.id)}")])
+    await bot(methods.send_message.SendMessage(chat_id=ADMIN_CHAT_ID,
+                                               text=f"Письмо помощи от @{message.from_user.username}\n{message.text[6:]}",
+                                               reply_markup=markup))
+    await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
+                                               text="Мы отправили ваше сообщение в тех. поддержку. Вам придёт ответное письмо."))
+
+
 @dp.message(filters.command.Command("start", "restart"))
 async def send_welcome(message: types.Message):
     await start_reg(message.chat.id, message.from_user.username)
@@ -49,6 +65,25 @@ async def greeting(message: types.Message):
 @dp.callback_query(CallBackStateFilter({}, lambda user_states, user_state, _: user_state is None))
 async def greeting_c(call: types.CallbackQuery):
     await start_reg(call.message.chat.id, call.from_user.username)
+
+
+@dp.callback_query(
+    CallBackStateFilter({RespondState.ADMIN},
+                        lambda user_states, user_state, data: data.startswith("answer") and user_state in user_states))
+async def answer_help_user_1(call: types.CallbackQuery):
+    await storage_manager.set_user_state(call.from_user.username, RespondState.ADMIN, call.message.chat.id,
+                                         last_seen=call.data[7:])
+    await bot(methods.send_message.SendMessage(chat_id=int(call.message.chat.id),
+                                               text=f"Напишите сообщение для пользователя."))
+
+
+@dp.message(filters.and_f(filters.command.Command("mes"),
+                          StateFilter({RespondState.ADMIN}, lambda user_states, user_state: user_state in user_states)))
+async def answer_help_user_2(message: types.Message):
+    await bot(methods.send_message.SendMessage(
+        chat_id=int((await storage_manager.get_user_state(message.from_user.username)).last_seen),
+        text=f"Письмо от тех. поддержки:\n{message.text[5:]}"))
+    await bot(methods.send_message.SendMessage(chat_id=message.chat.id, text="Пиьсмо успешно отправлено"))
 
 
 @dp.message(filters.and_f(filters.command.Command("show"),
@@ -303,7 +338,8 @@ async def set_image(message: types.Message):
 
 
 @dp.callback_query(
-    CallBackStateFilter({RespondState.WAIT_FOR_CREATING_IMAGE}, lambda user_states, user_state, _: user_state in user_states))
+    CallBackStateFilter({RespondState.WAIT_FOR_CREATING_IMAGE},
+                        lambda user_states, user_state, _: user_state in user_states))
 async def set_image_c(call: types.CallbackQuery):
     await send_input_image(call.message.chat.id, call.from_user.username)
 
@@ -531,41 +567,6 @@ async def like_user(call: types.CallbackQuery):
     await task2
     await task3
     await task4
-
-
-@dp.message(filters.command.Command("help"))
-async def help_user(message: types.Message):
-    if message.text == "/help":
-        await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
-                                                   text="Отправьте вместе с /help через пробел сообщение для тех. поддержки."))
-        return
-    markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
-    markup.inline_keyboard.append(
-        [types.InlineKeyboardButton(text="Ответить", callback_data=f"answer_{str(message.chat.id)}")])
-    await bot(methods.send_message.SendMessage(chat_id=ADMIN_CHAT_ID,
-                                               text=f"Письмо помощи от @{message.from_user.username}\n{message.text[6:]}",
-                                               reply_markup=markup))
-    await bot(methods.send_message.SendMessage(chat_id=message.chat.id,
-                                               text="Мы отправили ваше сообщение в тех. поддержку. Вам придёт ответное письмо."))
-
-
-@dp.callback_query(
-    CallBackStateFilter({RespondState.ADMIN},
-                        lambda user_states, user_state, data: data.startswith("answer") and user_state in user_states))
-async def answer_help_user_1(call: types.CallbackQuery):
-    await storage_manager.set_user_state(call.from_user.username, RespondState.ADMIN, call.message.chat.id,
-                                         last_seen=call.data[7:])
-    await bot(methods.send_message.SendMessage(chat_id=int(call.message.chat.id),
-                                               text=f"Напишите сообщение для пользователя."))
-
-
-@dp.message(filters.and_f(filters.command.Command("mes"),
-                          StateFilter({RespondState.ADMIN}, lambda user_states, user_state: user_state in user_states)))
-async def answer_help_user_2(message: types.Message):
-    await bot(methods.send_message.SendMessage(
-        chat_id=int((await storage_manager.get_user_state(message.from_user.username)).last_seen),
-        text=f"Письмо от тех. поддержки:\n{message.text[5:]}"))
-    await bot(methods.send_message.SendMessage(chat_id=message.chat.id, text="Пиьсмо успешно отправлено"))
 
 
 @dp.callback_query()
