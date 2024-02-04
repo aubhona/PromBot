@@ -41,7 +41,8 @@ async def get_user_state(user_nickname):
         result = await session.execute(
             select(State).where(State.nickname == user_nickname)
         )
-        return result.scalars().first()
+        user_state_cache[user_nickname] = result.scalars().first()
+        return user_state_cache[user_nickname]
 
 
 async def set_user_state(user_nickname, state, chat_id, last_seen=None, filter_value=None):
