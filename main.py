@@ -101,7 +101,7 @@ async def message_user(message: types.Message):
 async def message_user(message: types.Message):
     username = message.text.split(' ')[1]
     user_state_task = storage_manager.get_user_state(username)
-    user_task = storage_manager.get_user_state(username)
+    user_task = storage_manager.get_user_by_nick(username)
     markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
     user = await user_task
     user_state = await user_state_task

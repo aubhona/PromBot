@@ -180,6 +180,6 @@ async def count_total_men_active():
 async def count_total_women_active():
     async with async_session() as session:
         result = await session.execute(
-            select(func.count()).where(and_((not User.gender), User.is_active)).select_from(User)
+            select(func.count()).where(and_(User.gender == False, User.is_active)).select_from(User)
         )
         return result.scalar()
