@@ -100,13 +100,11 @@ async def message_user(message: types.Message):
                           StateFilter({RespondState.ADMIN}, lambda user_states, user_state: user_state in user_states)))
 async def message_user(message: types.Message):
     username = message.text.split(' ')[1]
-    user_state_task = storage_manager.get_user_state(username)
     user_task = storage_manager.get_user_by_nick(username)
     markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
     user = await user_task
-    user_state = await user_state_task
     markup.inline_keyboard.append([types.InlineKeyboardButton(text="Забанить", callback_data=f"decline_{user.nickname}")])
-    await send_form(user, markup, user_state.chat_id, True)
+    await send_form(user, markup, message.chat.id, True)
 
 
 @dp.message(filters.and_f(filters.command.Command("stats"),
