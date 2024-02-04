@@ -1,5 +1,5 @@
 from cachetools import LRUCache
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from sqlalchemy.future import select
 
 from backend.database import *
@@ -7,7 +7,7 @@ from backend.models.respond_state import *
 from backend.models.state import State
 from backend.models.user import User
 
-user_state_cache = LRUCache(maxsize=128)
+user_state_cache = LRUCache(maxsize=250)
 
 
 async def get_user_by_nick(user_nickname):
@@ -134,3 +134,51 @@ async def set_user_faculty(nickname, faculty):
 async def set_user_image_path(nickname, image_path):
     user = User(nickname=nickname, image_path=image_path, is_active=False)
     await add_user(user)
+
+
+async def count_total():
+    async with async_session() as session:
+        result = await session.execute(
+            select(func.count()).select_from(User)
+        )
+        return result.scalar()
+
+
+async def count_total_active():
+    async with async_session() as session:
+        result = await session.execute(
+            select(func.count()).where(User.is_active == True).select_from(User)
+        )
+        return result.scalar()
+
+
+async def count_total_men():
+    async with async_session() as session:
+        result = await session.execute(
+            select(func.count()).where(User.gender == True).select_from(User)
+        )
+        return result.scalar()
+
+
+async def count_total_women():
+    async with async_session() as session:
+        result = await session.execute(
+            select(func.count()).where(User.gender == False).select_from(User)
+        )
+        return result.scalar()
+
+
+async def count_total_men_active():
+    async with async_session() as session:
+        result = await session.execute(
+            select(func.count()).where(and_(User.gender, User.is_active)).select_from(User)
+        )
+        return result.scalar()
+
+
+async def count_total_women_active():
+    async with async_session() as session:
+        result = await session.execute(
+            select(func.count()).where(and_((not User.gender), User.is_active)).select_from(User)
+        )
+        return result.scalar()

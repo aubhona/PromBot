@@ -86,6 +86,41 @@ async def answer_help_user_2(message: types.Message):
     await bot(methods.send_message.SendMessage(chat_id=message.chat.id, text="Пиьсмо успешно отправлено"))
 
 
+@dp.message(filters.and_f(filters.command.Command("message"),
+                          StateFilter({RespondState.ADMIN}, lambda user_states, user_state: user_state in user_states)))
+async def message_user(message: types.Message):
+    username = message.text.split(' ')[1]
+    message_text = ' '.join(message.text.split(' ')[2:])
+    user_state_task = storage_manager.get_user_state(username)
+    await bot(methods.send_message.SendMessage(chat_id=(await user_state_task).chat_id, text=message_text))
+    await bot(methods.send_message.SendMessage(chat_id=message.chat.id, text="Сообщение успешно отправлено!"))
+
+
+@dp.message(filters.and_f(filters.command.Command("form"),
+                          StateFilter({RespondState.ADMIN}, lambda user_states, user_state: user_state in user_states)))
+async def message_user(message: types.Message):
+    username = message.text.split(' ')[1]
+    user_state_task = storage_manager.get_user_state(username)
+    user_task = storage_manager.get_user_state(username)
+    markup = types.InlineKeyboardMarkup(inline_keyboard=[[]])
+    user = await user_task
+    user_state = await user_state_task
+    markup.inline_keyboard.append([types.InlineKeyboardButton(text="Забанить", callback_data=f"decline_{user.nickname}")])
+    await send_form(user, markup, user_state.chat_id, True)
+
+
+@dp.message(filters.and_f(filters.command.Command("stats"),
+                          StateFilter({RespondState.ADMIN}, lambda user_states, user_state: user_state in user_states)))
+async def message_user(message: types.Message):
+    total = storage_manager.count_total()
+    total_active = storage_manager.count_total_active()
+    total_men = storage_manager.count_total_men()
+    total_women = storage_manager.count_total_women()
+    total_active_men = storage_manager.count_total_men_active()
+    total_active_women = storage_manager.count_total_women_active()
+    await bot(methods.send_message.SendMessage(chat_id=message.chat.id, text=f"Всего зарегистрированных пользователей: {await total}\nВсего активных: {await total_active}\nВсего парней: {await total_men}\nВсего девушек: {await total_women}\nВсего активных анкет парней: {await total_active_men}\nВсего активных анкет девушек: {await total_active_women}"))
+
+
 @dp.message(filters.and_f(filters.command.Command("show"),
                           StateFilter({RespondState.ADMIN}, lambda user_states, user_state: user_state in user_states)))
 async def show_profiles(message: types.Message):
@@ -107,6 +142,8 @@ async def allow(call: types.CallbackQuery):
     user_state_task = storage_manager.get_user_state(username)
     user_task = storage_manager.get_user_by_nick(username)
     user_state = await user_state_task
+    if user_state.state != RespondState.WAIT_FOR_ALLOW:
+        return
     task2 = bot(
         methods.send_message.SendMessage(chat_id=user_state.chat_id, text="Ваше объявление было успешно напечатано!"))
     await storage_manager.set_user_state(username, RespondState.WAIT_FOR_FIND, user_state.chat_id)
@@ -553,7 +590,7 @@ async def like_user(call: types.CallbackQuery):
                                 RespondState.WAIT_FOR_CHANGE_FILTER_1,
                                 RespondState.WAIT_FOR_CHANGE_FILTER_2, RespondState.WAIT_CHANGE}:
         await bot.send_message(chat_id=call.message.chat.id,
-                               text="Пользователь в данный момет не активен. Вы не можете лайкнуть.")
+                               text="Пользователь в данный момент не активен. Вы не можете лайкнуть.")
         return
     user_task = storage_manager.get_user_by_nick(call.from_user.username)
     user = await user_task
